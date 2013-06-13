@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  id="com.adobe.plugins.FastCanvas"
+  version="1.0.0">
+
+  <engines>
+    <engine name="cordova" version="2.3.0" />
+  </engines>
+
+  <name>FastCanvas</name>
+  <description>FastCanvas is a PhoneGap plugin which implements a very fast, 2D, mostly-HTML5-canvas-compatible rendering surface for Android. 
+    On other platforms, it silently falls back on the native Canvas implementation.
+    While FastCanvas attempts to look and behave like the HTML5 canvas, it only supports a subset of the HTML5 canvas API, focusing on what benefits most from hardware acceleration.
+  </description>
+  
+	<asset src="FastCanvas.js" target="FastCanvas.js" />
+
+	<platform name="android">
+    <config-file target="res/xml/config.xml" parent="plugins">
+      <plugin name="FastCanvas" value="com.adobe.plugins.FastCanvas" />
+    </config-file>
+
+    <source-file src="Android/src/com/adobe/plugins/FastCanvas.java" target-dir="src/com/adobe/plugins/" />
+    <source-file src="Android/src/com/adobe/plugins/FastCanvasJNI.java" target-dir="src/com/adobe/plugins/" />
+    <source-file src="Android/src/com/adobe/plugins/FastCanvasMessage.java" target-dir="src/com/adobe/plugins/" />
+    <source-file src="Android/src/com/adobe/plugins/FastCanvasRenderer.java" target-dir="src/com/adobe/plugins/" />
+    <source-file src="Android/src/com/adobe/plugins/FastCanvasTexture.java" target-dir="src/com/adobe/plugins/" />
+    <source-file src="Android/src/com/adobe/plugins/FastCanvasTextureDimension.java" target-dir="src/com/adobe/plugins/" />
+    <source-file src="Android/src/com/adobe/plugins/FastCanvasView.java" target-dir="src/com/adobe/plugins/" />
+    <source-file src="Android/libs/armeabi/libFastCanvasJNI.so" target-dir="libs/armeabi/" />
+  </platform>
+</plugin>
