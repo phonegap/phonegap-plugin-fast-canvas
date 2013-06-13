@@ -88,7 +88,7 @@ These instructions are for Windows. If working on a Mac, use / instead of \, mv 
 
 1. Compile FastCanvasJNI.java:
 ```
-	\FastCanvas\Android>javac -d . src\com\adobe\plugins\FastCanvasJNI.java
+	\FastCanvas\Android>javac -d . src\com\adobe\plugins\FastCanvasJNI.java src\com\adobe\plugins\FastCanvasTextureDimension.java
 ```
 
 2. Create FastCanvasJNI.h
