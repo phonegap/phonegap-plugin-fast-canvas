@@ -37,7 +37,7 @@ Canvas applications the use FastCanvas on Android.
 Prerequisites:
 * [ADT for Eclipse](http://developer.android.com/sdk/index.html)
 * [Cordova](http://cordova.apache.org/#download) or [PhoneGap](http://phonegap.com/download/) for Android (Getting started guides: [Cordova](http://cordova.apache.org/docs/en/2.7.0/guide_getting-started_android_index.md.html#Getting%20Started%20with%20Android), [PhoneGap](http://docs.phonegap.com/en/2.7.0/guide_getting-started_android_index.md.html#Getting%20Started%20with%20Android))
-* [FastCanvs](https://github.com/phonegap/phonegap-fast-canvas-plugin)
+* [FastCanvas](https://github.com/phonegap/phonegap-fast-canvas-plugin)
 
 
 ## Adding FastCanvas to Your Application ##
