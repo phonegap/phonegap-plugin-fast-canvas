@@ -3,9 +3,9 @@
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
- 
+
  http://www.apache.org/licenses/LICENSE-2.0
- 
+
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -359,7 +359,7 @@ private:
 
     void    BuildStreams(const char *renderCommands, int length);
     void	DoSetOrtho(int width, int height);
-	void	DoContextLost();
+    void	DoContextLost();
 
     bool    IsCmd( const char* in, const char* match ) {
         return in[0] == match[0];
@@ -399,40 +399,42 @@ private:
     }
     void UpdateFrameRate();
 
+    // Members
     static Canvas *theCanvas;
-	bool contextLost;
 
-    float backgroundRed;
-    float backgroundGreen;
-    float backgroundBlue;
+    bool m_contextLost;
 
-	bool orthoSet;
-	int orthoWidth;
-	int orthoHeight;
-    
-    clock_t lastTime;
-    int     frames;
-    int		messages;
-    float   fps;
-    float	mps;
-    int     msgLen;
-    float   bytesPS;
+    float m_backgroundRed;
+    float m_backgroundGreen;
+    float m_backgroundBlue;
+
+    bool m_orthoSet;
+    int m_orthoWidth;
+    int m_orthoHeight;
+
+    clock_t m_lastTime;
+    int     m_frames;
+    int		m_messages;
+    float   m_fps;
+    float	m_mps;
+    int     m_msgLen;
+    float   m_bytesPS;
 #ifdef USE_INDEX_BUFFER
-    unsigned int indexVBO;
+    unsigned int m_indexVBO;
 #endif
 
-    Stream textStream;
+    Stream m_textStream;
 
     // For supporting world alpha, although any color works.
-    Color worldColor;
-    
-    Transform transform;
+    Color m_worldColor;
+
+    Transform m_transform;
 
     // For the save/restore behavior.
-    DynArray<Transform> transformStack;
+    DynArray<Transform> m_transformStack;
 
     // Local scratch buffer for building streams.
-    DynArray<Vertex2> vertexBuffer;
+    DynArray<Vertex2> m_vertexBuffer;
 
     DynArray<Stream *> m_streams;
     DynArray<Texture *> m_textures;

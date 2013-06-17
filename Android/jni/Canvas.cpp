@@ -3,9 +3,9 @@
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
- 
+
  http://www.apache.org/licenses/LICENSE-2.0
- 
+
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -88,30 +88,30 @@ Canvas *Canvas::GetCanvas()
 
 Canvas::Canvas()
 {
-	contextLost = false;
+    m_contextLost = false;
 #ifdef WIN32
     glewInit();
 #endif
     DLog( "Canvas::Canvas");
-    backgroundRed = 0;
-    backgroundGreen = 0;
-    backgroundBlue = 0;
+    m_backgroundRed = 0;
+    m_backgroundGreen = 0;
+    m_backgroundBlue = 0;
 
-	orthoSet = false;
-	orthoWidth = 0;
-	orthoHeight = 0;
-    
-    lastTime = clock();
-    frames = 0;
-    messages = 0;
-    fps = 0.0f;
-    mps = 0.0f;
-    bytesPS = 0.0f;
-    msgLen = 0;
+    m_orthoSet = false;
+    m_orthoWidth = 0;
+    m_orthoHeight = 0;
+
+    m_lastTime = clock();
+    m_frames = 0;
+    m_messages = 0;
+    m_fps = 0.0f;
+    m_mps = 0.0f;
+    m_bytesPS = 0.0f;
+    m_msgLen = 0;
 #ifdef USE_INDEX_BUFFER
-    indexVBO = 0;
+    m_indexVBO = 0;
 #endif
-    worldColor.SetWhite();
+    m_worldColor.SetWhite();
 }
 
 /*static*/
@@ -134,58 +134,61 @@ void Canvas::Release()
 Canvas::~Canvas()
 {
     DLog( "Canvas::~Canvas start." );
-	DoContextLost();
+    DoContextLost();
     DLog( "Canvas::~Canvas end." );
 }
 
-void Canvas::DoContextLost() {
+void Canvas::DoContextLost()
+{
     DLog( "Canvas::DoContextLost start." );
-	// No need to clean up GL memory with glDeleteBuffers or glDeleteTextures.
-	// It all gets blown away automatically when the context is lost.
+    // No need to clean up GL memory with glDeleteBuffers or glDeleteTextures.
+    // It all gets blown away automatically when the context is lost.
 
-	contextLost = true;
+    m_contextLost = true;
 
     int i;
     int size = m_streams.GetSize();
     for (i = size-1; i >= 0; i--) {
         Stream *stream = m_streams[i];
-		m_streams.RemoveAt(i);
+        m_streams.RemoveAt(i);
         if (stream) {
             delete stream;
         }
     }
 
-	size = m_textures.GetSize();
-	for (i = size-1; i >= 0; i--) {
-		Texture *texture = m_textures[i];
-		m_textures.RemoveAt(i);
-		if (texture) {
-			delete texture;
-		}
-	}
+    size = m_textures.GetSize();
+    for (i = size-1; i >= 0; i--) {
+        Texture *texture = m_textures[i];
+        m_textures.RemoveAt(i);
+        if (texture) {
+            delete texture;
+        }
+    }
 
     DLog( "Canvas::DoContextLost end." );
 }
 
 void Canvas::SetBackgroundColor(float red, float green, float blue)
 {
-    backgroundRed = red;
-    backgroundGreen = green;
-    backgroundBlue = blue;
+    m_backgroundRed = red;
+    m_backgroundGreen = green;
+    m_backgroundBlue = blue;
 }
 
-void Canvas::SetOrtho(int width, int height) {
+void Canvas::SetOrtho(int width, int height)
+{
     if (width <= 0) width = 800;
     if (height <= 0) height = 600;
 
     DoSetOrtho(width, height);
 
-	orthoSet = true;
-	orthoWidth = width;
-	orthoHeight = height;
+    m_orthoSet = true;
+    m_orthoWidth = width;
+    m_orthoHeight = height;
 }
 
-void Canvas::DoSetOrtho(int width, int height) {
+void Canvas::DoSetOrtho(int width, int height)
+{
     if (width <= 0) width = 800;
     if (height <= 0) height = 600;
     glMatrixMode(GL_PROJECTION);
@@ -196,67 +199,67 @@ void Canvas::DoSetOrtho(int width, int height) {
     glOrtho(0, width, height, 0, -1, 1);
 #endif
     glMatrixMode(GL_MODELVIEW);
-	orthoWidth = width;
-	orthoHeight = height;
+    m_orthoWidth = width;
+    m_orthoHeight = height;
 }
 
 // There is an assumption here that stride == width * 4. Works on Android, need to confirm on iOS.
 void Canvas::AddTexture(int id, int glID, int width, int height)
 {
     DLog( "Entering AddTexture" );
-	Texture *img = new Texture (id, glID, width, height);
+    Texture *img = new Texture (id, glID, width, height);
     if (img) {
         DLog( "Canvas::AddTexture id=%d glID=%d width=%d height=%d", id, glID, width, height );
         m_textures.Append(&img, 1);
     }
     if ( id == -1 ) {
-        textStream.texture = img;
+        m_textStream.texture = img;
     }
     DLog( "Leaving AddTexture" );
 }
 
 bool Canvas::AddPngTexture(const unsigned char *buffer, long size, int id, unsigned int *pWidth, unsigned int *pHeight)
 {
-	bool success = false;
-	unsigned char *textureDataRGBA = NULL;
-	unsigned int error = lodepng_decode32(&textureDataRGBA, pWidth, pHeight, buffer, (size_t)size);
+    bool success = false;
+    unsigned char *textureDataRGBA = NULL;
+    unsigned int error = lodepng_decode32(&textureDataRGBA, pWidth, pHeight, buffer, (size_t)size);
     if(error) {
         DLog( "Canvas::AddPngTexture Error %d: %s", error, lodepng_error_text(error));
-	} else {
-		GLuint glID;
-		glGenTextures(1, &glID);
-		glBindTexture(GL_TEXTURE_2D, glID);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else {
+        GLuint glID;
+        glGenTextures(1, &glID);
+        glBindTexture(GL_TEXTURE_2D, glID);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		unsigned int p2Width = 2;
-		while (p2Width < *pWidth) {
-			p2Width *= 2;
-		}
+        unsigned int p2Width = 2;
+        while (p2Width < *pWidth) {
+            p2Width *= 2;
+        }
 
-		unsigned int p2Height = 2;
-		while (p2Height < *pHeight) {
-			p2Height *= 2;
-		}
+        unsigned int p2Height = 2;
+        while (p2Height < *pHeight) {
+            p2Height *= 2;
+        }
 
-	    if (*pWidth == p2Width && *pHeight == p2Height) {
-		    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, *pWidth, *pHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureDataRGBA);
-	    } else {
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, p2Width, p2Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, *pWidth, *pHeight, GL_RGBA, GL_UNSIGNED_BYTE, textureDataRGBA);
-			*pWidth = p2Width;
-			*pHeight = p2Height;
-	    }
+        if (*pWidth == p2Width && *pHeight == p2Height) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, *pWidth, *pHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureDataRGBA);
+        } else {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, p2Width, p2Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, *pWidth, *pHeight, GL_RGBA, GL_UNSIGNED_BYTE, textureDataRGBA);
+            *pWidth = p2Width;
+            *pHeight = p2Height;
+        }
 
-		AddTexture(id, glID, (int)(*pWidth), (int)(*pHeight));
-		success = true;
-	}
+        AddTexture(id, glID, (int)(*pWidth), (int)(*pHeight));
+        success = true;
+    }
 
-	if (textureDataRGBA) {
-		free(textureDataRGBA);
-	}
+    if (textureDataRGBA) {
+        free(textureDataRGBA);
+    }
 
-	return success;
+    return success;
 }
 
 void Canvas::RemoveTexture(int id)
@@ -302,10 +305,10 @@ void Canvas::EnsureIndex( int nIndex )
                 base += 4;
             }
         }
-        if ( indexVBO == 0 ) {
-            glGenBuffers( 1, &indexVBO );
+        if ( m_indexVBO == 0 ) {
+            glGenBuffers( 1, &m_indexVBO );
         }
-        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO );
+        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, m_indexVBO );
         glBufferData( GL_ELEMENT_ARRAY_BUFFER, m_indices.GetSize()*sizeof(uint16_t), m_indices.GetData(), GL_DYNAMIC_DRAW );
         glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
     }
@@ -320,9 +323,9 @@ void Stream::VBOUpload( const DynArray<Vertex2>& vertexBuffer )
     }
 
 #ifdef USE_INDEX_BUFFER
-    ASSERT( vertexBuffer.GetSize() % 4 == 0 );
+    ASSERT( m_vertexBuffer.GetSize() % 4 == 0 );
 #else
-    ASSERT( vertexBuffer.GetSize() % 6 == 0 );
+    ASSERT( m_vertexBuffer.GetSize() % 6 == 0 );
 #endif
 
     if ( nVBOAllocated < vertexBuffer.GetSize() ) {
@@ -340,21 +343,21 @@ void Stream::VBOUpload( const DynArray<Vertex2>& vertexBuffer )
 
 void Canvas::UpdateFrameRate()
 {
-    ++frames;
-    if ( frames >= 20 ) {
+    ++m_frames;
+    if ( m_frames >= 20 ) {
         clock_t now = clock();
-        clock_t delta = now - lastTime;
+        clock_t delta = now - m_lastTime;
         double dSeconds = (double)delta / (double)CLOCKS_PER_SEC;
-        fps = (float)( (double)frames / dSeconds );
-        mps = (float)( (double)messages / dSeconds );
-        bytesPS = (float)((double)msgLen / dSeconds );
+        m_fps = (float)( (double)m_frames / dSeconds );
+        m_mps = (float)( (double)m_messages / dSeconds );
+        m_bytesPS = (float)((double)m_msgLen / dSeconds );
 
         //DLog( "delta=%d dSeconds=%f fps=%f", (int)delta, dSeconds, fps );
 
-        frames = 0;
-        messages = 0;
-        lastTime = now;
-        msgLen = 0;
+        m_frames = 0;
+        m_messages = 0;
+        m_lastTime = now;
+        m_msgLen = 0;
     }
 }
 
@@ -367,8 +370,8 @@ void Canvas::RenderText( const char* format, ... )
     va_end( va );
     buffer[127] = 0;
 
-    vertexBuffer.SetSize(0);
-    if ( textStream.texture ) {
+    m_vertexBuffer.SetSize(0);
+    if ( m_textStream.texture ) {
         int len = (int)strlen( buffer );
 
         for( int j=0; j<len; ++j ) {
@@ -409,14 +412,14 @@ void Canvas::RenderText( const char* format, ... )
             vbuf[2].color.SetWhite();
             vbuf[3].color.SetWhite();
 
-            vertexBuffer.Append( vbuf, 4 );
+            m_vertexBuffer.Append( vbuf, 4 );
 #ifndef USE_INDEX_BUFFER
-            vertexBuffer.Append( &vbuf[0], 1 );
-            vertexBuffer.Append( &vbuf[2], 1 );
+            m_vertexBuffer.Append( &vbuf[0], 1 );
+            m_vertexBuffer.Append( &vbuf[2], 1 );
 #endif
         }
         EnsureIndex( len*6 );
-        textStream.VBOUpload( vertexBuffer );
+        m_textStream.VBOUpload( m_vertexBuffer );
         return;
     }
 }
@@ -424,18 +427,18 @@ void Canvas::RenderText( const char* format, ... )
 
 void Canvas::Render(const char *renderCommands, int length)
 {
-	// Render thread can hit this during destruction
-	if (contextLost) return;
+    // Render thread can hit this during destruction
+    if (m_contextLost) return;
 
-    worldColor.SetWhite();
+    m_worldColor.SetWhite();
     if (length > 0) {
-        messages++;
+        m_messages++;
         BuildStreams(renderCommands, length);
     }
 #ifdef DEBUG
     UpdateFrameRate();
 #endif
-    glClearColor(backgroundRed, backgroundGreen, backgroundBlue, 1.0f);
+    glClearColor(m_backgroundRed, m_backgroundGreen, m_backgroundBlue, 1.0f);
     glClear(  GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 
     glMatrixMode(GL_MODELVIEW);
@@ -458,16 +461,16 @@ void Canvas::Render(const char *renderCommands, int length)
         EnsureIndex( nIndex );
     }
 #ifdef DEBUG
-    RenderText( "%d [%d] dc=%d kbps=%d quads=%d", (int)(fps+0.5f), (int)(mps+0.5f), size, (int)bytesPS/1024, quads );
+    RenderText( "%d [%d] dc=%d kbps=%d quads=%d", (int)(m_fps+0.5f), (int)(m_mps+0.5f), size, (int)m_bytesPS/1024, quads );
 #endif
     for ( int i = 0; i <= size; ++i) {
-        Stream *stream = (i==size) ? &textStream : m_streams[i];
+        Stream *stream = (i==size) ? &m_textStream : m_streams[i];
         if ( !stream || !stream->texture ) {
             continue;
         }
         glBindBuffer(GL_ARRAY_BUFFER, stream->vboVertexID );
 #ifdef USE_INDEX_BUFFER
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexVBO);
 #endif
         glBindTexture( GL_TEXTURE_2D, stream->texture->GetGlID() );
 
@@ -525,11 +528,11 @@ void Canvas::BuildStreams( const char *renderCommands, int length )
             stream->Reset();
         }
     }
-    
+
     Clip clip;
     int n = -1;
-    vertexBuffer.SetSize(0);
-    msgLen += length;
+    m_vertexBuffer.SetSize(0);
+    m_msgLen += length;
     const char* p = renderCommands;
     const char* end = renderCommands + length;
 
@@ -541,37 +544,37 @@ void Canvas::BuildStreams( const char *renderCommands, int length )
         if ( IsCmd( p, "t" )) {
             // setTransform
             p ++;
-            p = ParseSetTransform( p, SET_XFORM, false, transform, &transform);
+            p = ParseSetTransform( p, SET_XFORM, false, m_transform, &m_transform);
         } else  if ( IsCmd( p, "f" )) {
             // transform
             p ++;
-            p = ParseSetTransform( p, SET_XFORM, true, transform, &transform);
+            p = ParseSetTransform( p, SET_XFORM, true, m_transform, &m_transform);
         } else  if ( IsCmd( p, "m" )) {
             // resetTransform
             p ++;
-            p = ParseSetTransform( p, IDENTITY, false, transform, &transform );
+            p = ParseSetTransform( p, IDENTITY, false, m_transform, &m_transform );
         } else  if ( IsCmd( p, "k" )) {
             // scale
             p ++;
-            p = ParseSetTransform( p, SCALE, true, transform, &transform );
+            p = ParseSetTransform( p, SCALE, true, m_transform, &m_transform );
         } else  if ( IsCmd( p, "r" )) {
             // rotate
             p ++;
-            p = ParseSetTransform( p, ROTATE, true, transform, &transform );
+            p = ParseSetTransform( p, ROTATE, true, m_transform, &m_transform );
         } else  if ( IsCmd( p, "l" )) {
             // translate
             p ++;
-            p = ParseSetTransform( p, TRANSLATE, true, transform, &transform );
+            p = ParseSetTransform( p, TRANSLATE, true, m_transform, &m_transform );
         } else if ( IsCmd( p, "v" )) {
             // save
             p ++;
-            transformStack.Append( &transform, 1 );
+            m_transformStack.Append( &m_transform, 1 );
         } else if ( IsCmd( p, "e" )) {
             // restore
             p ++;
-            if ( transformStack.GetSize() > 0 ) {
-                transform = transformStack[transformStack.GetSize()-1];
-                transformStack.SetSize( transformStack.GetSize()-1 );
+            if ( m_transformStack.GetSize() > 0 ) {
+                m_transform = m_transformStack[m_transformStack.GetSize()-1];
+                m_transformStack.SetSize( m_transformStack.GetSize()-1 );
             }
         } else if ( IsCmd( p, "a" )) {
             // global alpha
@@ -579,7 +582,7 @@ void Canvas::BuildStreams( const char *renderCommands, int length )
             float alpha = FastFloat( p );
             while ( *p && *p != ';' ) ++p;
             if ( *p == ';' ) ++p;
-            worldColor.a = (int)(255.0*alpha+0.5f);
+            m_worldColor.a = (int)(255.0*alpha+0.5f);
         } else if ( IsCmd( p, "d" )) {
             p++;
             // Load the clip
@@ -605,7 +608,7 @@ void Canvas::BuildStreams( const char *renderCommands, int length )
                 } else {
                     // Switching streams. Flush the current one if needed:
                     if ( n >= 0 && n < m_streams.GetSize() ) {
-                        m_streams[n]->VBOUpload( vertexBuffer );
+                        m_streams[n]->VBOUpload( m_vertexBuffer );
                     }
 
                     ++n;
@@ -622,9 +625,9 @@ void Canvas::BuildStreams( const char *renderCommands, int length )
                     ASSERT( stream->texture );
                     ASSERT( stream->texture->GetTextureID() == clip.textureID );
 #endif
-                    vertexBuffer.SetSize(0);
+                    m_vertexBuffer.SetSize(0);
                 }
-                DoPushQuad( m_streams[n], transform, clip);
+                DoPushQuad( m_streams[n], m_transform, clip);
             }
         } else {
             p = ParseUnknown(p);
@@ -637,7 +640,7 @@ void Canvas::BuildStreams( const char *renderCommands, int length )
         ASSERT( stream );
         ASSERT( stream->texture );
         ASSERT( stream->texture->GetTextureID() == clip.textureID );
-        stream->VBOUpload( vertexBuffer );
+        stream->VBOUpload( m_vertexBuffer );
     }
     //__android_log_write(ANDROID_LOG_ERROR, "Canvas::BuildStreams", "End");
 }
@@ -790,20 +793,20 @@ void Canvas::DoPushQuad (Stream *stream, const Transform &transform, const Clip 
     q.vertexArr[3].tex.x = clip.cx           / width;
     q.vertexArr[3].tex.y = (clip.cy+clip.ch) / height;
 
-    q.vertexArr[0].color = worldColor;
-    q.vertexArr[1].color = worldColor;
-    q.vertexArr[2].color = worldColor;
-    q.vertexArr[3].color = worldColor;
+    q.vertexArr[0].color = m_worldColor;
+    q.vertexArr[1].color = m_worldColor;
+    q.vertexArr[2].color = m_worldColor;
+    q.vertexArr[3].color = m_worldColor;
 
-    if (!worldColor.isWhite()) {
+    if (!m_worldColor.isWhite()) {
         stream->usesColor = true;
     }
 
     // Write
-    vertexBuffer.Append( q.vertexArr, Quad::kQuadArrSize );
+    m_vertexBuffer.Append( q.vertexArr, Quad::kQuadArrSize );
 #ifndef USE_INDEX_BUFFER
-    vertexBuffer.Append( &q.vertexArr[0], 1 );
-    vertexBuffer.Append( &q.vertexArr[2], 1 );
+    m_vertexBuffer.Append( &q.vertexArr[0], 1 );
+    m_vertexBuffer.Append( &q.vertexArr[2], 1 );
 #endif
 }
 
@@ -811,7 +814,7 @@ void Canvas::DoPushQuad (Stream *stream, const Transform &transform, const Clip 
 // Used in C++ framework.
 void Canvas::OnSurfaceChanged( int width, int height )
 {
-    glClearColor(backgroundRed, backgroundGreen, backgroundBlue, 1.0f);
+    glClearColor(m_backgroundRed, m_backgroundGreen, m_backgroundBlue, 1.0f);
     glShadeModel(GL_SMOOTH);
 #if defined(__ANDROID__) || defined(__APPLE__)
     glClearDepthf(1.0f);
@@ -827,16 +830,16 @@ void Canvas::OnSurfaceChanged( int width, int height )
     // Sets the current view port to the new size.
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
-	if (orthoSet) {
-		DoSetOrtho (orthoWidth, orthoHeight);
-	} else {
-		DoSetOrtho(width, height);
-	}
+    if (m_orthoSet) {
+        DoSetOrtho (m_orthoWidth, m_orthoHeight);
+    } else {
+        DoSetOrtho(width, height);
+    }
 
-	glLoadIdentity();
-	glClear( GL_COLOR_BUFFER_BIT );
+    glLoadIdentity();
+    glClear( GL_COLOR_BUFFER_BIT );
 
-	contextLost = false;
+    m_contextLost = false;
 }
 
 //called from JNI or Obj-C to indicate we want to readback the GL layer into a file on the next render
@@ -873,10 +876,10 @@ bool Canvas::CaptureGLLayer(CaptureParams * params)
     //use glGetPixels to get the bits from the current frame buffer
     // Make the BYTE array, factor of 3 because it's RBG.
     GLubyte *pixels = new GLubyte [4 * width * height];
-	if (!pixels) {
+    if (!pixels) {
         DLog( "Canvas::CaptureGLLayer Unable to allocate buffer");
-		return true;
-	}
+        return true;
+    }
     glFinish();
     glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
