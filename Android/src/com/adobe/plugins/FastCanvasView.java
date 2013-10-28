@@ -95,6 +95,10 @@ public class FastCanvasView extends GLSurfaceView {
 		super.onPause();
 		FastCanvasJNI.contextLost();
 		mRenderer.onSurfaceDestroyed();
+		
+		// Avoid crashing on open-home-open
+		System.runFinalization();
+		android.os.Process.killProcess(android.os.Process.myPid());
 	}
 	
 	public void execScripts(Object obj) {
