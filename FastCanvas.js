@@ -13,6 +13,55 @@
  limitations under the License.
  */
 
+/**
+ * Container for utilities.
+ * @private
+ */
+ var FastCanvasUtils = {};
+
+/**
+ * Wrapper for native calls allowing us
+ * to some some extra validation.
+ * @private
+ */
+FastCanvasUtils._toNative = function(success, fail, service, action, args){
+	// exec may not be defined outside of the 
+	// context of a native cordova application
+	if (cordova && typeof cordova.exec === 'function'){
+		cordova.exec(success, fail, service, action, args || []);
+
+	}else if (typeof fail === 'function'){
+		// we're assuming that if you're attempting
+		// a native call when native is not available
+		// the result is a failure (callback)
+		fail();
+	}
+};
+
+/**
+ * Defines getter/setter properties in objects.
+ * @private
+ */
+FastCanvasUtils._defProp = function(obj, name, getter, setter){
+	// standard approach
+	if (typeof Object.defineProperty === "function"){
+		Object.defineProperty(obj, name, {get:getter, set:setter});
+		return;
+	}
+
+	// if standard not available, fallback to legacy
+	if (typeof obj.__defineGetter__ === "function" && typeof obj.__defineSetter__ === "function"){
+		obj.__defineGetter__(name, setter);
+		obj.__defineSetter__(name, setter);
+		return;
+	}
+
+	if (!FastCanvasUtils._defProp.warnedUnsupported){
+		console.log("Warning: Unable to define custom properties for FastCanvas; respective getter/setter methods will need to be used instead.");
+		FastCanvasUtils._defProp.warnedUnsupported = true;
+	}
+};
+FastCanvasUtils._defProp.warnedUnsupported = false;
 
 /**
  * Creates a new FastCanvasImage. For portability, its suggested you use
@@ -98,49 +147,51 @@ FastCanvasImage.idCounter = 0;
  * }
  * myImage.src = "images/spritesheet.jpg";
  */
-Object.defineProperty(FastCanvasImage.prototype, "src", 
-	{
-		get: function(){
-			return this._src;
-		},
-		set: function(value){
-			this._src = value;
+FastCanvasImage.prototype.setSrc = function(){
+	this._src = value;
 
-			var fastCanvas = FastCanvas._instance;
-			var context = fastCanvas.getContext("2d");
+	var fastCanvas = FastCanvas._instance;
+	var context = fastCanvas.getContext("2d");
 
-			// Unloading
-			if (!this._src){
-				context.unloadTexture(this);
-				return;
-			}
+	// Unloading
+	if (!this._src){
+		context.unloadTexture(this);
+		return;
+	}
 
-			// Loading
-			this.complete = false;
+	// Loading
+	this.complete = false;
 
-			// callback wrappers
-			var me = this;
-			function onerror(err){
-				me.complete = true;
-				if (typeof me.onerror === 'function'){
-					me.onerror(err);
-				}
-			}
-
-			function onload(metrics) {
-				me.complete = true;
-				me.width = Math.floor( metrics[0] );
-				me.height = Math.floor( metrics[1] );
-
-				if (typeof me.onload === 'function'){
-					me.onload();
-				}
-			}
-
-			context.loadTexture(this, onload, onerror);
+	// callback wrappers
+	var me = this;
+	function onerror(err){
+		me.complete = true;
+		if (typeof me.onerror === 'function'){
+			me.onerror(err);
 		}
 	}
+
+	function onload(metrics) {
+		me.complete = true;
+		me.width = Math.floor( metrics[0] );
+		me.height = Math.floor( metrics[1] );
+
+		if (typeof me.onload === 'function'){
+			me.onload();
+		}
+	}
+
+	context.loadTexture(this, onload, onerror);
+};
+FastCanvasImage.prototype.getSrc = function(value){
+	return this._src;
+};
+
+FastCanvasUtils._defProp(FastCanvasImage.prototype, "src",
+	FastCanvasImage.prototype.getSrc,
+	FastCanvasImage.prototype.setSrc
 );
+
 
 /**
  * False when the image is in the process of loading an 
@@ -152,16 +203,18 @@ Object.defineProperty(FastCanvasImage.prototype, "src",
  * @type {boolean}
  * @name FastCanvasImage#complete
  */
-Object.defineProperty(FastCanvasImage.prototype, "complete", 
-	{
-		get: function(){
-			return this._complete;
-		},
-		set: function(value){
-			this._complete = value;
-		}
-	}
+FastCanvasImage.prototype.setComplete = function(value){
+	this._complete = value;
+};
+FastCanvasImage.prototype.getComplete = function(){
+	return this._complete;
+};
+
+FastCanvasUtils._defProp(FastCanvasImage.prototype, "complete",
+	FastCanvasImage.prototype.getComplete,
+	FastCanvasImage.prototype.setComplete
 );
+
 
 /**
  * <b>Invalid constructor</b>: Obtain a FastContext2D instance 
@@ -189,15 +242,19 @@ function FastContext2D(){
  * @type {number}
  * @name FastContext2D#globalAlpha
  */
-Object.defineProperty(FastContext2D.prototype, "globalAlpha", {
-	get: function() {
+FastContext2D.prototype.setGlobalAlpha = function(value){
+	this._globalAlpha = value;
+	this._drawCommands = this._drawCommands.concat("a" + value.toFixed(6) + ";" );
+};
+FastContext2D.prototype.getGlobalAlpha = function(){
 		return this._globalAlpha;
-	},
-	set: function( value ) {
-		this._globalAlpha = value;
-		this._drawCommands = this._drawCommands.concat("a" + value.toFixed(6) + ";" );
-	}
-});
+};
+
+FastCanvasUtils._defProp(FastContext2D.prototype, "globalAlpha",
+	FastContext2D.prototype.getGlobalAlpha,
+	FastContext2D.prototype.setGlobalAlpha
+);
+
 
 /**
  * Loads an image into the plugin to be used as a texture in the
@@ -226,7 +283,7 @@ FastContext2D.prototype.loadTexture = function (image, successCallback, errorCal
 		throw new Error('FastContext2D.loadTexture failure: errorCallback parameter not a function');
 	}
 
-	FastCanvas._toNative( successCallback, errorCallback, 'FastCanvas', 'loadTexture', [image.src, image._id]);
+	FastCanvasUtils._toNative( successCallback, errorCallback, 'FastCanvas', 'loadTexture', [image.src, image._id]);
 };
 
 /**
@@ -244,7 +301,7 @@ FastContext2D.prototype.loadTexture = function (image, successCallback, errorCal
  * @private
  */
 FastContext2D.prototype.unloadTexture = function (image) {
-	FastCanvas._toNative(null, null, 'FastCanvas', 'unloadTexture', [image._id]);
+	FastCanvasUtils._toNative(null, null, 'FastCanvas', 'unloadTexture', [image._id]);
 };
 
 /** 
@@ -424,7 +481,7 @@ FastContext2D.prototype.drawImage = function(
 FastContext2D.prototype.render = function () {
 	var commands = this._drawCommands;
 	this._drawCommands = "";
-	FastCanvas._toNative(null, null, 'FastCanvas', 'render', [commands]);
+	FastCanvasUtils._toNative(null, null, 'FastCanvas', 'render', [commands]);
 };
 
 /**
@@ -439,7 +496,7 @@ FastContext2D.prototype.capture = function(x,y,w,h,fileName, successCallback, er
 		throw new Error('errorCallback parameter not a function');
 	}
 	
-	FastCanvas._toNative(successCallback, errorCallback, 'FastCanvas', 'capture', [x,y,w,h,fileName]);
+	FastCanvasUtils._toNative(successCallback, errorCallback, 'FastCanvas', 'capture', [x,y,w,h,fileName]);
 };
 
 /**
@@ -570,15 +627,18 @@ FastCanvas._createFastCanvas = function(){
 	 * @type {number}
 	 * @name FastCanvas#width
 	 */
-	Object.defineProperty(fastCanvas, "width", {
-		get: function(){
-			return this._width;
-		},
-		set: function(value){
-			this._width = value;
-			FastCanvas._toNative(null, null, 'FastCanvas', 'setOrtho', [this._width, this._height]);
-		}
-	});
+	fastCanvas.setWidth = function(value){
+		this._width = value;
+		FastCanvasUtils._toNative(null, null, 'FastCanvas', 'setOrtho', [this._width, this._height]);
+	};
+	fastCanvas.getWidth = function(){
+		return this._width;
+	};
+
+	FastCanvasUtils._defProp(fastCanvas, "width",
+		fastCanvas.getWidth,
+		fastCanvas.setWidth
+	);
 
 	/**
 	 * Defines the height of the FastCanvas. The actual height
@@ -589,15 +649,18 @@ FastCanvas._createFastCanvas = function(){
 	 * @type {number}
 	 * @name FastCanvas#height
 	 */
-	Object.defineProperty(fastCanvas, "height", {
-		get: function(){
-			return this._height;
-		},
-		set: function(value){
-			this._height = value;
-			FastCanvas._toNative(null, null, 'FastCanvas', 'setOrtho', [this._width, this._height]);
-		}
-	});
+	fastCanvas.setHeight = function(value){
+		this._height = value;
+		FastCanvasUtils._toNative(null, null, 'FastCanvas', 'setOrtho', [this._width, this._height]);
+	};
+	fastCanvas.getHeight = function(){
+		return this._height;
+	};
+
+	FastCanvasUtils._defProp(fastCanvas, "height",
+		fastCanvas.getHeight,
+		fastCanvas.setHeight
+	);
 
 	// copy methods over from FastCanvas into DIV object
 	fastCanvas.getContext = FastCanvas.prototype.getContext;
@@ -695,7 +758,7 @@ FastCanvas._isAvailable = function(){
 	}
 	// synchronous unless native code can't callback into 
 	// JS at which point we assume the default unavailable
-	FastCanvas._toNative( successCallback, errorCallback, 'FastCanvas', 'isAvailable');
+	FastCanvasUtils._toNative( successCallback, errorCallback, 'FastCanvas', 'isAvailable');
 	return isAvailable;
 };
 
@@ -771,7 +834,7 @@ FastCanvas.setBackgroundColor = function (color) {
 	}
 	
 	if (FastCanvas.isFast){
-		FastCanvas._toNative(null, null, 'FastCanvas', 'setBackgroundColor', [color]);
+		FastCanvasUtils._toNative(null, null, 'FastCanvas', 'setBackgroundColor', [color]);
 	}else{
 		// assigning to HTML fallback requires the hash (#)
 		// (fast canvas color filtering stripped it)
@@ -904,22 +967,3 @@ FastCanvas.prototype.getContext = function(contextID){
 
 	return this._context;
 };
-
-/**
- * Wrapper for native calls allowing us
- * to some some extra validation.
- * @private
- */
-FastCanvas._toNative = function(success, fail, service, action, args){
-	// exec may not be defined outside of the 
-	// context of a native cordova application
-	if (cordova && typeof cordova.exec === 'function'){
-		cordova.exec(success, fail, service, action, args || []);
-
-	}else if (typeof fail === 'function'){
-		// we're assuming that if you're attempting
-		// a native call when native is not available
-		// the result is a failure (callback)
-		fail();
-	}
-}
